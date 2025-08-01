@@ -22,7 +22,11 @@ import {
   FileText,
   Eye,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  History,
+  Clock,
+  GitCommit,
+  Zap
 } from "lucide-react";
 
 interface CodeComment {
@@ -142,6 +146,67 @@ export default function PullRequestReview() {
     ]
   };
 
+  // Mock review history data
+  const reviewHistory = [
+    {
+      id: "r1",
+      type: "ai_review",
+      timestamp: "2024-01-15T11:00:00Z",
+      author: "AI Reviewer",
+      score: 85,
+      status: "completed",
+      summary: "Initial AI review completed with 85/100 score",
+      details: {
+        issues: 2,
+        suggestions: 5,
+        filesReviewed: 8,
+        duration: "2.3 minutes"
+      }
+    },
+    {
+      id: "r2", 
+      type: "human_review",
+      timestamp: "2024-01-15T11:15:00Z",
+      author: "john-reviewer",
+      avatar: "/placeholder.svg",
+      status: "changes_requested",
+      summary: "Requested changes for error handling",
+      details: {
+        comments: 3,
+        filesReviewed: 4
+      }
+    },
+    {
+      id: "r3",
+      type: "commit",
+      timestamp: "2024-01-15T12:30:00Z", 
+      author: "sarah-dev",
+      avatar: "/placeholder.svg",
+      commit: "abc123f",
+      summary: "Added error handling and loading states",
+      details: {
+        additions: 23,
+        deletions: 8,
+        filesChanged: 3
+      }
+    },
+    {
+      id: "r4",
+      type: "ai_review",
+      timestamp: "2024-01-15T12:35:00Z",
+      author: "AI Reviewer", 
+      score: 92,
+      status: "completed",
+      summary: "Updated AI review after changes - score improved to 92/100",
+      details: {
+        issues: 0,
+        suggestions: 2,
+        filesReviewed: 3,
+        duration: "1.1 minutes"
+      }
+    }
+  ];
+
   const handleAddComment = () => {
     if (!newComment.trim() || !selectedLine || !selectedFile) return;
     
@@ -198,6 +263,7 @@ export default function PullRequestReview() {
             <TabsTrigger value="files">Files Changed ({pullRequest.filesChanged})</TabsTrigger>
             <TabsTrigger value="conversation">Conversation</TabsTrigger>
             <TabsTrigger value="ai-review">AI Review</TabsTrigger>
+            <TabsTrigger value="history">History ({reviewHistory.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="files" className="space-y-4">
@@ -403,6 +469,100 @@ export default function PullRequestReview() {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Review History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {reviewHistory.map((item, index) => (
+                    <div key={item.id} className="relative">
+                      {index < reviewHistory.length - 1 && (
+                        <div className="absolute left-4 top-8 h-full w-px bg-border" />
+                      )}
+                      
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-background border-2 border-border flex items-center justify-center">
+                            {item.type === 'ai_review' && <Zap className="h-4 w-4 text-primary" />}
+                            {item.type === 'human_review' && <User className="h-4 w-4 text-blue-600" />}
+                            {item.type === 'commit' && <GitCommit className="h-4 w-4 text-green-600" />}
+                          </div>
+                        </div>
+                        
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{item.author}</span>
+                              {item.type === 'ai_review' && (
+                                <Badge variant="secondary" className="text-xs">
+                                  AI Review
+                                </Badge>
+                              )}
+                              {item.type === 'human_review' && (
+                                <Badge variant="outline" className="text-xs">
+                                  Human Review
+                                </Badge>
+                              )}
+                              {item.type === 'commit' && (
+                                <Badge variant="outline" className="text-xs">
+                                  <GitCommit className="h-3 w-3 mr-1" />
+                                  {item.commit}
+                                </Badge>
+                              )}
+                              {item.score && (
+                                <Badge variant={item.score >= 90 ? 'default' : item.score >= 70 ? 'secondary' : 'destructive'} className="text-xs">
+                                  {item.score}/100
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {new Date(item.timestamp).toLocaleString()}
+                            </div>
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground">{item.summary}</p>
+                          
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            {item.details.issues !== undefined && (
+                              <span>Issues: {item.details.issues}</span>
+                            )}
+                            {item.details.suggestions !== undefined && (
+                              <span>Suggestions: {item.details.suggestions}</span>
+                            )}
+                            {item.details.comments !== undefined && (
+                              <span>Comments: {item.details.comments}</span>
+                            )}
+                            {item.details.filesReviewed !== undefined && (
+                              <span>Files: {item.details.filesReviewed}</span>
+                            )}
+                            {item.details.filesChanged !== undefined && (
+                              <span>Files: {item.details.filesChanged}</span>
+                            )}
+                            {item.details.additions !== undefined && (
+                              <span className="text-green-600">+{item.details.additions}</span>
+                            )}
+                            {item.details.deletions !== undefined && (
+                              <span className="text-red-600">-{item.details.deletions}</span>
+                            )}
+                            {item.details.duration && (
+                              <span>Duration: {item.details.duration}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
