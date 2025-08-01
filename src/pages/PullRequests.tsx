@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -20,7 +20,8 @@ import {
   Calendar,
   ExternalLink,
   Zap,
-  Target
+  Target,
+  ChevronDown
 } from "lucide-react";
 
 // Mock data for pull requests
@@ -121,6 +122,23 @@ const pullRequests = [
 
 const PullRequests = () => {
   const [activeTab, setActiveTab] = useState("all");
+  
+  const stats = {
+    total: pullRequests.length,
+    pending: pullRequests.filter(pr => pr.status === "pending" || pr.status === "in_review").length,
+    approved: pullRequests.filter(pr => pr.status === "approved").length,
+    needsChanges: pullRequests.filter(pr => pr.status === "needs_changes").length
+  };
+  
+  const getFilterLabel = (filter: string) => {
+    switch (filter) {
+      case "all": return `All (${stats.total})`;
+      case "pending": return `Pending (${stats.pending})`;
+      case "approved": return `Approved (${stats.approved})`;
+      case "needs_changes": return `Changes (${stats.needsChanges})`;
+      default: return filter;
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -157,13 +175,6 @@ const PullRequests = () => {
     if (activeTab === "needs_changes") return pr.status === "needs_changes";
     return true;
   });
-
-  const stats = {
-    total: pullRequests.length,
-    pending: pullRequests.filter(pr => pr.status === "pending" || pr.status === "in_review").length,
-    approved: pullRequests.filter(pr => pr.status === "approved").length,
-    needsChanges: pullRequests.filter(pr => pr.status === "needs_changes").length
-  };
 
   return (
     <DashboardLayout>
@@ -224,111 +235,127 @@ const PullRequests = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
-                <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
-                <TabsTrigger value="approved">Approved ({stats.approved})</TabsTrigger>
-                <TabsTrigger value="needs_changes">Changes ({stats.needsChanges})</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value={activeTab} className="space-y-4 mt-4">
-                {filteredPRs.map((pr, index) => (
-                  <div key={pr.id}>
-                    <div className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => window.location.href = `/pull-requests/${pr.id}`}>
-                      <div className="flex items-center gap-2 pt-1">
-                        {pr.provider === "github" ? (
-                          <Github className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <GitBranch className="h-5 w-5 text-muted-foreground" />
-                        )}
-                        <GitPullRequest className="h-4 w-4 text-muted-foreground" />
+            <div className="mb-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-auto">
+                    {getFilterLabel(activeTab)}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => setActiveTab("all")}>
+                    All ({stats.total})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("pending")}>
+                    Pending ({stats.pending})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("approved")}>
+                    Approved ({stats.approved})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("needs_changes")}>
+                    Changes ({stats.needsChanges})
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            <div className="space-y-4">
+              {filteredPRs.map((pr, index) => (
+                <div key={pr.id}>
+                  <div className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => window.location.href = `/pull-requests/${pr.id}`}>
+                    <div className="flex items-center gap-2 pt-1">
+                      {pr.provider === "github" ? (
+                        <Github className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <GitBranch className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <GitPullRequest className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-base">{pr.title}</h3>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="font-mono">#{pr.number}</span>
+                            <span>{pr.repository}</span>
+                            <span className="flex items-center gap-1">
+                              <Target className="h-3 w-3" />
+                              {pr.jiraTicket}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(pr.status)}
+                          {getAIReviewBadge(pr.aiReviewStatus)}
+                        </div>
                       </div>
                       
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-base">{pr.title}</h3>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                <ExternalLink className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span className="font-mono">#{pr.number}</span>
-                              <span>{pr.repository}</span>
-                              <span className="flex items-center gap-1">
-                                <Target className="h-3 w-3" />
-                                {pr.jiraTicket}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(pr.status)}
-                            {getAIReviewBadge(pr.aiReviewStatus)}
-                          </div>
+                      <div className="flex items-center gap-6 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={pr.author.avatar} />
+                            <AvatarFallback className="text-xs">
+                              {pr.author.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-muted-foreground">{pr.author.name}</span>
                         </div>
-                        
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={pr.author.avatar} />
-                              <AvatarFallback className="text-xs">
-                                {pr.author.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-muted-foreground">{pr.author.name}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {pr.createdAt}
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <GitBranch className="h-3 w-3" />
-                            {pr.branch}
-                          </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {pr.createdAt}
                         </div>
-                        
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="flex items-center gap-4">
-                            <span className="text-muted-foreground">{pr.changedFiles} files</span>
-                            <span className="text-green-600">+{pr.additions}</span>
-                            <span className="text-red-600">-{pr.deletions}</span>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1">
-                              <Zap className="h-3 w-3" />
-                              <span className="text-muted-foreground">{pr.aiComments} AI comments</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MessageSquare className="h-3 w-3" />
-                              <span className="text-muted-foreground">{pr.humanComments} human comments</span>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <GitBranch className="h-3 w-3" />
+                          {pr.branch}
                         </div>
-                        
-                        {pr.reviewProgress < 100 && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Review Progress</span>
-                              <span className="text-muted-foreground">{pr.reviewProgress}%</span>
-                            </div>
-                            <Progress value={pr.reviewProgress} className="h-2" />
-                          </div>
-                        )}
                       </div>
+                      
+                      <div className="flex items-center gap-6 text-sm">
+                        <div className="flex items-center gap-4">
+                          <span className="text-muted-foreground">{pr.changedFiles} files</span>
+                          <span className="text-green-600">+{pr.additions}</span>
+                          <span className="text-red-600">-{pr.deletions}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <Zap className="h-3 w-3" />
+                            <span className="text-muted-foreground">{pr.aiComments} AI comments</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" />
+                            <span className="text-muted-foreground">{pr.humanComments} human comments</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {pr.reviewProgress < 100 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Review Progress</span>
+                            <span className="text-muted-foreground">{pr.reviewProgress}%</span>
+                          </div>
+                          <Progress value={pr.reviewProgress} className="h-2" />
+                        </div>
+                      )}
                     </div>
-                    {index < filteredPRs.length - 1 && <Separator className="my-4" />}
                   </div>
-                ))}
-                
-                {filteredPRs.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No pull requests found for the selected filter.
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                  {index < filteredPRs.length - 1 && <Separator className="my-4" />}
+                </div>
+              ))}
+              
+              {filteredPRs.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No pull requests found for the selected filter.
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
