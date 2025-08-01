@@ -6,15 +6,31 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Save, User, Bell, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Save, User, Bell, Shield, Github, GitBranch, Zap, CheckCircle, XCircle } from "lucide-react";
 
 const Settings = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [reviewReminders, setReviewReminders] = useState(false);
   const [autoApproval, setAutoApproval] = useState(false);
+  
+  // OAuth connection states
+  const [githubConnected, setGithubConnected] = useState(false);
+  const [bitbucketConnected, setBitbucketConnected] = useState(false);
+  const [jiraConnected, setJiraConnected] = useState(false);
 
   const handleSave = () => {
     console.log("Saving settings...");
+  };
+
+  const handleOAuthConnect = (provider: string) => {
+    console.log(`Connecting to ${provider}...`);
+    // In real implementation, this would redirect to OAuth flow
+  };
+
+  const handleOAuthDisconnect = (provider: string) => {
+    console.log(`Disconnecting from ${provider}...`);
+    // In real implementation, this would revoke OAuth tokens
   };
 
   return (
@@ -92,6 +108,104 @@ const Settings = () => {
                 checked={reviewReminders}
                 onCheckedChange={setReviewReminders}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* OAuth Integrations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Connected Accounts
+            </CardTitle>
+            <CardDescription>
+              Connect your development tools for automated code reviews
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* GitHub Integration */}
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <Github className="h-8 w-8" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base font-medium">GitHub</Label>
+                    <Badge variant={githubConnected ? "default" : "secondary"}>
+                      {githubConnected ? (
+                        <><CheckCircle className="h-3 w-3 mr-1" /> Connected</>
+                      ) : (
+                        <><XCircle className="h-3 w-3 mr-1" /> Not Connected</>
+                      )}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Access your repositories and create PR comments
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant={githubConnected ? "outline" : "default"}
+                onClick={() => githubConnected ? handleOAuthDisconnect("GitHub") : handleOAuthConnect("GitHub")}
+              >
+                {githubConnected ? "Disconnect" : "Connect"}
+              </Button>
+            </div>
+
+            {/* Bitbucket Integration */}
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <GitBranch className="h-8 w-8" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base font-medium">Bitbucket</Label>
+                    <Badge variant={bitbucketConnected ? "default" : "secondary"}>
+                      {bitbucketConnected ? (
+                        <><CheckCircle className="h-3 w-3 mr-1" /> Connected</>
+                      ) : (
+                        <><XCircle className="h-3 w-3 mr-1" /> Not Connected</>
+                      )}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Access your repositories and create PR comments
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant={bitbucketConnected ? "outline" : "default"}
+                onClick={() => bitbucketConnected ? handleOAuthDisconnect("Bitbucket") : handleOAuthConnect("Bitbucket")}
+              >
+                {bitbucketConnected ? "Disconnect" : "Connect"}
+              </Button>
+            </div>
+
+            {/* Jira Integration */}
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <Zap className="h-8 w-8" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base font-medium">Jira</Label>
+                    <Badge variant={jiraConnected ? "default" : "secondary"}>
+                      {jiraConnected ? (
+                        <><CheckCircle className="h-3 w-3 mr-1" /> Connected</>
+                      ) : (
+                        <><XCircle className="h-3 w-3 mr-1" /> Not Connected</>
+                      )}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Access ticket information for context-aware reviews
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant={jiraConnected ? "outline" : "default"}
+                onClick={() => jiraConnected ? handleOAuthDisconnect("Jira") : handleOAuthConnect("Jira")}
+              >
+                {jiraConnected ? "Disconnect" : "Connect"}
+              </Button>
             </div>
           </CardContent>
         </Card>
