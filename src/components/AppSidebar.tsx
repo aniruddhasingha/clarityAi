@@ -38,10 +38,10 @@ export function AppSidebar() {
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">CP</span>
+              <span className="text-primary-foreground font-bold text-sm">CA</span>
             </div>
             <div>
-              <h1 className="font-bold text-lg">CodePilot</h1>
+              <h1 className="font-bold text-lg">ClarityAI</h1>
               <p className="text-muted-foreground text-xs">AI Code Review</p>
             </div>
           </div>

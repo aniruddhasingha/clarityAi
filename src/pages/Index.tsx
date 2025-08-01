@@ -67,7 +67,7 @@ const Index = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Recent Activity</h1>
           <p className="text-muted-foreground mt-2">
-            Latest pull requests reviewed by CodePilot AI
+            Latest pull requests reviewed by ClarityAI
           </p>
         </div>
         
