@@ -125,7 +125,7 @@ const PullRequests = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
-        return <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
+        return <Badge className="bg-green-600 hover:bg-green-700 text-white"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
       case "needs_changes":
         return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Changes Requested</Badge>;
       case "in_review":
