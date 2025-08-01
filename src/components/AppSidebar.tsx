@@ -33,8 +33,8 @@ export function AppSidebar() {
       : "hover:bg-muted transition-colors";
 
   return (
-    <Sidebar className="w-64">
-      <SidebarContent className="bg-gradient-muted">
+    <Sidebar className="w-64 bg-sidebar border-sidebar-border">
+      <SidebarContent className="bg-sidebar">
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
