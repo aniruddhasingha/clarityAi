@@ -5,6 +5,7 @@ interface ThemeProviderProps {
   children: ReactNode;
   attribute?: "class" | "data-theme";
   defaultTheme?: string;
+  forcedTheme?: string;
   enableSystem?: boolean;
   disableTransitionOnChange?: boolean;
 }
