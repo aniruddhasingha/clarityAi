@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Repositories from "./pages/Repositories";
 import Settings from "./pages/Settings";
+import RepositorySettings from "./pages/RepositorySettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/repositories" element={<Repositories />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/repository/:repoName/settings" element={<RepositorySettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
