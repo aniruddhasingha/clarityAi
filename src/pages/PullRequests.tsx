@@ -235,7 +235,7 @@ const PullRequests = () => {
               <TabsContent value={activeTab} className="space-y-4 mt-4">
                 {filteredPRs.map((pr, index) => (
                   <div key={pr.id}>
-                    <div className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                    <div className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => window.location.href = `/pull-requests/${pr.id}`}>
                       <div className="flex items-center gap-2 pt-1">
                         {pr.provider === "github" ? (
                           <Github className="h-5 w-5 text-muted-foreground" />

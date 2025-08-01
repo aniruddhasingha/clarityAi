@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import PullRequests from "./pages/PullRequests";
+import PullRequestReview from "./pages/PullRequestReview";
 import Repositories from "./pages/Repositories";
 import Settings from "./pages/Settings";
 import RepositorySettings from "./pages/RepositorySettings";
@@ -21,6 +22,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/pull-requests" element={<PullRequests />} />
+          <Route path="/pull-requests/:id" element={<PullRequestReview />} />
           <Route path="/repositories" element={<Repositories />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/repository/:repoName/settings" element={<RepositorySettings />} />
