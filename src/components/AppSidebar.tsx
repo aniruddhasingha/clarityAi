@@ -1,4 +1,4 @@
-import { Home, FolderGit2, Settings } from "lucide-react";
+import { Home, FolderGit2, Settings, GitPullRequest } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import {
@@ -15,6 +15,7 @@ import {
 
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: Home },
+  { title: "Pull Requests", url: "/pull-requests", icon: GitPullRequest },
   { title: "Repositories", url: "/repositories", icon: FolderGit2 },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

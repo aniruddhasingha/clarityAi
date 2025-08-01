@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import PullRequests from "./pages/PullRequests";
 import Repositories from "./pages/Repositories";
 import Settings from "./pages/Settings";
 import RepositorySettings from "./pages/RepositorySettings";
@@ -19,6 +20,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/pull-requests" element={<PullRequests />} />
           <Route path="/repositories" element={<Repositories />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/repository/:repoName/settings" element={<RepositorySettings />} />
