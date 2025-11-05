@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clarityai-frontend
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - clarityai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Backend service (uncomment when backend is ready)
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.backend
+  #   container_name: clarityai-backend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #     - DATABASE_URL=${DATABASE_URL}
+  #     - JWT_SECRET=${JWT_SECRET}
+  #     - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+  #     - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - clarityai-network
+  #   restart: unless-stopped
+
+  # PostgreSQL database (uncomment when backend is ready)
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: clarityai-postgres
+  #   environment:
+  #     - POSTGRES_DB=clarityai
+  #     - POSTGRES_USER=clarityai
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - clarityai-network
+  #   restart: unless-stopped
+
+  # Redis cache (optional, for session management)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: clarityai-redis
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - clarityai-network
+  #   restart: unless-stopped
+
+networks:
+  clarityai-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
