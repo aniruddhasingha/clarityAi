@@ -2,6 +2,14 @@
 
 **For Beginners: Step-by-Step Guide to Deploy Your First Application**
 
+> **🐳 NEW: Docker-Based Deployment (Recommended)**
+>
+> We now offer a **modern, containerized deployment approach** using Docker and Artifact Registry. This is the **recommended method** for production deployments.
+>
+> 👉 **[Read the Docker Deployment Guide](DOCKER_DEPLOYMENT.md)** for the modern approach.
+>
+> This guide covers the traditional static hosting approach, which is still valid but less flexible than Docker.
+
 This guide will help you deploy ClarityAI to Google Cloud Platform (GCP) starting with a QA environment, then scaling to UAT and Production.
 
 ---
