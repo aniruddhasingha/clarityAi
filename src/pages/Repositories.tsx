@@ -9,43 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Settings, GitBranch, Clock, Plus, Github, Eye, EyeOff, Webhook, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// Mock data for connected repositories
-const connectedRepositories = [
-  {
-    id: 1,
-    name: "acme-corp/website",
-    description: "Main company website built with React",
-    provider: "github",
-    lastReview: "2 hours ago",
-    monitoring: true,
-    webhookStatus: "active",
-    pullRequests: 3,
-    reviewsToday: 5
-  },
-  {
-    id: 2,
-    name: "acme-corp/api",
-    description: "REST API backend service",
-    provider: "github",
-    lastReview: "1 day ago", 
-    monitoring: true,
-    webhookStatus: "active",
-    pullRequests: 1,
-    reviewsToday: 2
-  },
-  {
-    id: 3,
-    name: "acme-corp/mobile-app",
-    description: "React Native mobile application",
-    provider: "bitbucket",
-    lastReview: "3 days ago",
-    monitoring: false,
-    webhookStatus: "inactive",
-    pullRequests: 0,
-    reviewsToday: 0
-  }
-];
+import { useData } from "@/contexts/DataContext";
+import { toast } from "sonner";
 
 // Mock data for available repositories from GitHub/Bitbucket
 const availableRepositories = [
@@ -53,55 +18,65 @@ const availableRepositories = [
     id: 4,
     name: "acme-corp/docs",
     description: "Documentation website",
-    provider: "github",
+    provider: "github" as const,
     isPrivate: false
   },
   {
     id: 5,
     name: "acme-corp/internal-tools",
     description: "Internal development tools",
-    provider: "github",
+    provider: "github" as const,
     isPrivate: true
   },
   {
     id: 6,
     name: "acme-corp/design-system",
     description: "Component library and design tokens",
-    provider: "bitbucket",
+    provider: "bitbucket" as const,
     isPrivate: false
   }
 ];
 
 const Repositories = () => {
-  const [repositories, setRepositories] = useState(connectedRepositories);
+  const { repositories, toggleRepositoryMonitoring, addRepository, deleteRepository } = useData();
   const [availableRepos] = useState(availableRepositories);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  
+
   const handleToggleMonitoring = (repoId: number) => {
-    setRepositories(repos => 
-      repos.map(repo => 
-        repo.id === repoId 
-          ? { ...repo, monitoring: !repo.monitoring, webhookStatus: !repo.monitoring ? "active" : "inactive" }
-          : repo
-      )
-    );
+    toggleRepositoryMonitoring(repoId);
+    const repo = repositories.find(r => r.id === repoId);
+    if (repo) {
+      toast.success(
+        repo.monitoring
+          ? `Monitoring disabled for ${repo.name}`
+          : `Monitoring enabled for ${repo.name}`
+      );
+    }
   };
 
   const handleConnectRepository = (availableRepo: typeof availableRepositories[0]) => {
     const newRepo = {
-      ...availableRepo,
+      id: availableRepo.id,
+      name: availableRepo.name,
+      description: availableRepo.description,
+      provider: availableRepo.provider,
       lastReview: "Never",
       monitoring: true,
       webhookStatus: "active" as const,
       pullRequests: 0,
       reviewsToday: 0
     };
-    setRepositories(prev => [...prev, newRepo]);
+    addRepository(newRepo);
     setIsAddDialogOpen(false);
+    toast.success(`Connected ${newRepo.name}`);
   };
 
   const handleDisconnectRepository = (repoId: number) => {
-    setRepositories(repos => repos.filter(repo => repo.id !== repoId));
+    const repo = repositories.find(r => r.id === repoId);
+    if (repo) {
+      deleteRepository(repoId);
+      toast.success(`Disconnected ${repo.name}`);
+    }
   };
 
   const getStatusBadge = (repo: typeof repositories[0]) => {
