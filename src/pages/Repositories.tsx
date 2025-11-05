@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,13 @@ import { Settings, GitBranch, Clock, Plus, Github, Eye, EyeOff, Webhook, CheckCi
 import { Link } from "react-router-dom";
 import { useData } from "@/contexts/DataContext";
 import { toast } from "sonner";
+import {
+  createWebhook,
+  deleteWebhook,
+  getWebhookForRepository,
+  hasActiveWebhook,
+  testWebhook
+} from "@/services/webhooks";
 
 // Mock data for available repositories from GitHub/Bitbucket
 const availableRepositories = [
@@ -38,23 +45,67 @@ const availableRepositories = [
 ];
 
 const Repositories = () => {
-  const { repositories, toggleRepositoryMonitoring, addRepository, deleteRepository } = useData();
+  const { repositories, toggleRepositoryMonitoring, addRepository, deleteRepository, updateRepository } = useData();
   const [availableRepos] = useState(availableRepositories);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const handleToggleMonitoring = (repoId: number) => {
-    toggleRepositoryMonitoring(repoId);
+  // Update webhook status for all repositories on mount
+  useEffect(() => {
+    repositories.forEach(repo => {
+      const hasWebhook = hasActiveWebhook(repo.id);
+      const expectedStatus = repo.monitoring && hasWebhook ? "active" : "inactive";
+
+      if (repo.webhookStatus !== expectedStatus) {
+        updateRepository(repo.id, { webhookStatus: expectedStatus });
+      }
+    });
+  }, [repositories, updateRepository]);
+
+  const handleToggleMonitoring = async (repoId: number) => {
     const repo = repositories.find(r => r.id === repoId);
-    if (repo) {
-      toast.success(
-        repo.monitoring
-          ? `Monitoring disabled for ${repo.name}`
-          : `Monitoring enabled for ${repo.name}`
-      );
+    if (!repo) return;
+
+    if (!repo.monitoring) {
+      // Enabling monitoring - create webhook
+      toast.info(`Enabling monitoring for ${repo.name}...`);
+
+      const result = await createWebhook(repoId, repo.name, repo.provider);
+
+      if (result.success) {
+        toggleRepositoryMonitoring(repoId);
+        toast.success(`Monitoring enabled for ${repo.name}`, {
+          description: "Webhook created successfully"
+        });
+      } else {
+        toast.error(`Failed to enable monitoring`, {
+          description: result.error
+        });
+      }
+    } else {
+      // Disabling monitoring - delete webhook
+      const webhook = getWebhookForRepository(repoId);
+
+      if (webhook) {
+        const result = await deleteWebhook(webhook.id);
+
+        if (result.success) {
+          toggleRepositoryMonitoring(repoId);
+          toast.success(`Monitoring disabled for ${repo.name}`, {
+            description: "Webhook removed"
+          });
+        } else {
+          toast.error(`Failed to disable monitoring`, {
+            description: result.error
+          });
+        }
+      } else {
+        toggleRepositoryMonitoring(repoId);
+        toast.success(`Monitoring disabled for ${repo.name}`);
+      }
     }
   };
 
-  const handleConnectRepository = (availableRepo: typeof availableRepositories[0]) => {
+  const handleConnectRepository = async (availableRepo: typeof availableRepositories[0]) => {
     const newRepo = {
       id: availableRepo.id,
       name: availableRepo.name,
@@ -62,20 +113,65 @@ const Repositories = () => {
       provider: availableRepo.provider,
       lastReview: "Never",
       monitoring: true,
-      webhookStatus: "active" as const,
+      webhookStatus: "pending" as const,
       pullRequests: 0,
       reviewsToday: 0
     };
+
     addRepository(newRepo);
+
+    // Create webhook for the new repository
+    const result = await createWebhook(newRepo.id, newRepo.name, newRepo.provider);
+
+    if (result.success) {
+      updateRepository(newRepo.id, { webhookStatus: "active" });
+      toast.success(`Connected ${newRepo.name}`, {
+        description: "Webhook configured successfully"
+      });
+    } else {
+      updateRepository(newRepo.id, { webhookStatus: "inactive", monitoring: false });
+      toast.warning(`Connected ${newRepo.name}`, {
+        description: `Webhook setup failed: ${result.error}`
+      });
+    }
+
     setIsAddDialogOpen(false);
-    toast.success(`Connected ${newRepo.name}`);
   };
 
-  const handleDisconnectRepository = (repoId: number) => {
+  const handleDisconnectRepository = async (repoId: number) => {
     const repo = repositories.find(r => r.id === repoId);
-    if (repo) {
-      deleteRepository(repoId);
-      toast.success(`Disconnected ${repo.name}`);
+    if (!repo) return;
+
+    // Delete webhook if exists
+    const webhook = getWebhookForRepository(repoId);
+    if (webhook) {
+      await deleteWebhook(webhook.id);
+    }
+
+    deleteRepository(repoId);
+    toast.success(`Disconnected ${repo.name}`);
+  };
+
+  const handleTestWebhook = async (repoId: number) => {
+    const repo = repositories.find(r => r.id === repoId);
+    if (!repo) return;
+
+    const webhook = getWebhookForRepository(repoId);
+    if (!webhook) {
+      toast.error("No webhook configured for this repository");
+      return;
+    }
+
+    toast.info(`Testing webhook for ${repo.name}...`);
+
+    const result = await testWebhook(webhook.id);
+
+    if (result.success) {
+      toast.success("Webhook test successful!");
+    } else {
+      toast.error("Webhook test failed", {
+        description: result.error
+      });
     }
   };
 
