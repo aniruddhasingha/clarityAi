@@ -7,13 +7,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { 
-  GitPullRequest, 
-  Github, 
-  GitBranch, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import { useData } from "@/contexts/DataContext";
+import {
+  GitPullRequest,
+  Github,
+  GitBranch,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   MessageSquare,
   User,
@@ -24,105 +25,10 @@ import {
   ChevronDown
 } from "lucide-react";
 
-// Mock data for pull requests
-const pullRequests = [
-  {
-    id: 1,
-    title: "Implement user authentication system",
-    number: 42,
-    repository: "acme-corp/website",
-    author: {
-      name: "John Doe",
-      username: "johndoe",
-      avatar: "/placeholder.svg"
-    },
-    branch: "feature/auth-system",
-    status: "in_review",
-    jiraTicket: "ACME-123",
-    createdAt: "2 hours ago",
-    reviewProgress: 75,
-    aiReviewStatus: "completed",
-    aiComments: 8,
-    humanComments: 3,
-    changedFiles: 12,
-    additions: 245,
-    deletions: 67,
-    provider: "github"
-  },
-  {
-    id: 2,
-    title: "Fix mobile responsive design issues",
-    number: 38,
-    repository: "acme-corp/website",
-    author: {
-      name: "Jane Smith",
-      username: "janesmith",
-      avatar: "/placeholder.svg"
-    },
-    branch: "fix/mobile-responsive",
-    status: "pending",
-    jiraTicket: "ACME-119",
-    createdAt: "4 hours ago",
-    reviewProgress: 25,
-    aiReviewStatus: "in_progress",
-    aiComments: 0,
-    humanComments: 0,
-    changedFiles: 6,
-    additions: 89,
-    deletions: 23,
-    provider: "github"
-  },
-  {
-    id: 3,
-    title: "Add API rate limiting middleware",
-    number: 15,
-    repository: "acme-corp/api",
-    author: {
-      name: "Mike Johnson",
-      username: "mikej",
-      avatar: "/placeholder.svg"
-    },
-    branch: "feature/rate-limiting",
-    status: "approved",
-    jiraTicket: "ACME-145",
-    createdAt: "1 day ago",
-    reviewProgress: 100,
-    aiReviewStatus: "completed",
-    aiComments: 5,
-    humanComments: 2,
-    changedFiles: 4,
-    additions: 156,
-    deletions: 12,
-    provider: "github"
-  },
-  {
-    id: 4,
-    title: "Update dependencies and fix vulnerabilities",
-    number: 7,
-    repository: "acme-corp/mobile-app",
-    author: {
-      name: "Sarah Wilson",
-      username: "sarahw",
-      avatar: "/placeholder.svg"
-    },
-    branch: "security/dependency-updates",
-    status: "needs_changes",
-    jiraTicket: "ACME-201",
-    createdAt: "3 days ago",
-    reviewProgress: 90,
-    aiReviewStatus: "completed",
-    aiComments: 12,
-    humanComments: 5,
-    changedFiles: 18,
-    additions: 67,
-    deletions: 234,
-    provider: "bitbucket"
-  }
-];
-
 const PullRequests = () => {
+  const { pullRequests } = useData();
   const [activeTab, setActiveTab] = useState("all");
-  
+
   const stats = {
     total: pullRequests.length,
     pending: pullRequests.filter(pr => pr.status === "pending" || pr.status === "in_review").length,

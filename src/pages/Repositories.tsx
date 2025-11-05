@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,43 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Settings, GitBranch, Clock, Plus, Github, Eye, EyeOff, Webhook, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// Mock data for connected repositories
-const connectedRepositories = [
-  {
-    id: 1,
-    name: "acme-corp/website",
-    description: "Main company website built with React",
-    provider: "github",
-    lastReview: "2 hours ago",
-    monitoring: true,
-    webhookStatus: "active",
-    pullRequests: 3,
-    reviewsToday: 5
-  },
-  {
-    id: 2,
-    name: "acme-corp/api",
-    description: "REST API backend service",
-    provider: "github",
-    lastReview: "1 day ago", 
-    monitoring: true,
-    webhookStatus: "active",
-    pullRequests: 1,
-    reviewsToday: 2
-  },
-  {
-    id: 3,
-    name: "acme-corp/mobile-app",
-    description: "React Native mobile application",
-    provider: "bitbucket",
-    lastReview: "3 days ago",
-    monitoring: false,
-    webhookStatus: "inactive",
-    pullRequests: 0,
-    reviewsToday: 0
-  }
-];
+import { useData } from "@/contexts/DataContext";
+import { toast } from "sonner";
+import {
+  createWebhook,
+  deleteWebhook,
+  getWebhookForRepository,
+  hasActiveWebhook,
+  testWebhook
+} from "@/services/webhooks";
 
 // Mock data for available repositories from GitHub/Bitbucket
 const availableRepositories = [
@@ -53,55 +25,154 @@ const availableRepositories = [
     id: 4,
     name: "acme-corp/docs",
     description: "Documentation website",
-    provider: "github",
+    provider: "github" as const,
     isPrivate: false
   },
   {
     id: 5,
     name: "acme-corp/internal-tools",
     description: "Internal development tools",
-    provider: "github",
+    provider: "github" as const,
     isPrivate: true
   },
   {
     id: 6,
     name: "acme-corp/design-system",
     description: "Component library and design tokens",
-    provider: "bitbucket",
+    provider: "bitbucket" as const,
     isPrivate: false
   }
 ];
 
 const Repositories = () => {
-  const [repositories, setRepositories] = useState(connectedRepositories);
+  const { repositories, toggleRepositoryMonitoring, addRepository, deleteRepository, updateRepository } = useData();
   const [availableRepos] = useState(availableRepositories);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  
-  const handleToggleMonitoring = (repoId: number) => {
-    setRepositories(repos => 
-      repos.map(repo => 
-        repo.id === repoId 
-          ? { ...repo, monitoring: !repo.monitoring, webhookStatus: !repo.monitoring ? "active" : "inactive" }
-          : repo
-      )
-    );
+
+  // Update webhook status for all repositories on mount
+  useEffect(() => {
+    repositories.forEach(repo => {
+      const hasWebhook = hasActiveWebhook(repo.id);
+      const expectedStatus = repo.monitoring && hasWebhook ? "active" : "inactive";
+
+      if (repo.webhookStatus !== expectedStatus) {
+        updateRepository(repo.id, { webhookStatus: expectedStatus });
+      }
+    });
+  }, [repositories, updateRepository]);
+
+  const handleToggleMonitoring = async (repoId: number) => {
+    const repo = repositories.find(r => r.id === repoId);
+    if (!repo) return;
+
+    if (!repo.monitoring) {
+      // Enabling monitoring - create webhook
+      toast.info(`Enabling monitoring for ${repo.name}...`);
+
+      const result = await createWebhook(repoId, repo.name, repo.provider);
+
+      if (result.success) {
+        toggleRepositoryMonitoring(repoId);
+        toast.success(`Monitoring enabled for ${repo.name}`, {
+          description: "Webhook created successfully"
+        });
+      } else {
+        toast.error(`Failed to enable monitoring`, {
+          description: result.error
+        });
+      }
+    } else {
+      // Disabling monitoring - delete webhook
+      const webhook = getWebhookForRepository(repoId);
+
+      if (webhook) {
+        const result = await deleteWebhook(webhook.id);
+
+        if (result.success) {
+          toggleRepositoryMonitoring(repoId);
+          toast.success(`Monitoring disabled for ${repo.name}`, {
+            description: "Webhook removed"
+          });
+        } else {
+          toast.error(`Failed to disable monitoring`, {
+            description: result.error
+          });
+        }
+      } else {
+        toggleRepositoryMonitoring(repoId);
+        toast.success(`Monitoring disabled for ${repo.name}`);
+      }
+    }
   };
 
-  const handleConnectRepository = (availableRepo: typeof availableRepositories[0]) => {
+  const handleConnectRepository = async (availableRepo: typeof availableRepositories[0]) => {
     const newRepo = {
-      ...availableRepo,
+      id: availableRepo.id,
+      name: availableRepo.name,
+      description: availableRepo.description,
+      provider: availableRepo.provider,
       lastReview: "Never",
       monitoring: true,
-      webhookStatus: "active" as const,
+      webhookStatus: "pending" as const,
       pullRequests: 0,
       reviewsToday: 0
     };
-    setRepositories(prev => [...prev, newRepo]);
+
+    addRepository(newRepo);
+
+    // Create webhook for the new repository
+    const result = await createWebhook(newRepo.id, newRepo.name, newRepo.provider);
+
+    if (result.success) {
+      updateRepository(newRepo.id, { webhookStatus: "active" });
+      toast.success(`Connected ${newRepo.name}`, {
+        description: "Webhook configured successfully"
+      });
+    } else {
+      updateRepository(newRepo.id, { webhookStatus: "inactive", monitoring: false });
+      toast.warning(`Connected ${newRepo.name}`, {
+        description: `Webhook setup failed: ${result.error}`
+      });
+    }
+
     setIsAddDialogOpen(false);
   };
 
-  const handleDisconnectRepository = (repoId: number) => {
-    setRepositories(repos => repos.filter(repo => repo.id !== repoId));
+  const handleDisconnectRepository = async (repoId: number) => {
+    const repo = repositories.find(r => r.id === repoId);
+    if (!repo) return;
+
+    // Delete webhook if exists
+    const webhook = getWebhookForRepository(repoId);
+    if (webhook) {
+      await deleteWebhook(webhook.id);
+    }
+
+    deleteRepository(repoId);
+    toast.success(`Disconnected ${repo.name}`);
+  };
+
+  const handleTestWebhook = async (repoId: number) => {
+    const repo = repositories.find(r => r.id === repoId);
+    if (!repo) return;
+
+    const webhook = getWebhookForRepository(repoId);
+    if (!webhook) {
+      toast.error("No webhook configured for this repository");
+      return;
+    }
+
+    toast.info(`Testing webhook for ${repo.name}...`);
+
+    const result = await testWebhook(webhook.id);
+
+    if (result.success) {
+      toast.success("Webhook test successful!");
+    } else {
+      toast.error("Webhook test failed", {
+        description: result.error
+      });
+    }
   };
 
   const getStatusBadge = (repo: typeof repositories[0]) => {
