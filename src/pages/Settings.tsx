@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Save, User, Bell, Shield, Github, GitBranch, Zap, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { isConnected, simulateOAuthConnect, disconnectOAuth, OAuthProvider } from "@/services/oauth";
 
 interface UserSettings {
   firstName: string;
@@ -17,9 +18,6 @@ interface UserSettings {
   emailNotifications: boolean;
   reviewReminders: boolean;
   autoApproval: boolean;
-  githubConnected: boolean;
-  bitbucketConnected: boolean;
-  jiraConnected: boolean;
 }
 
 const Settings = () => {
@@ -33,15 +31,19 @@ const Settings = () => {
   const [reviewReminders, setReviewReminders] = useState(false);
   const [autoApproval, setAutoApproval] = useState(false);
 
-  // OAuth connection states
+  // OAuth connection states (derived from OAuth service)
   const [githubConnected, setGithubConnected] = useState(false);
   const [bitbucketConnected, setBitbucketConnected] = useState(false);
   const [jiraConnected, setJiraConnected] = useState(false);
 
-  // Load settings from localStorage on mount
+  // Check OAuth connection status on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem("user-settings");
+    setGithubConnected(isConnected("github"));
+    setBitbucketConnected(isConnected("bitbucket"));
+    setJiraConnected(isConnected("jira"));
 
+    // Load other settings from localStorage
+    const savedSettings = localStorage.getItem("user-settings");
     if (savedSettings) {
       try {
         const settings: UserSettings = JSON.parse(savedSettings);
@@ -51,9 +53,6 @@ const Settings = () => {
         setEmailNotifications(settings.emailNotifications ?? true);
         setReviewReminders(settings.reviewReminders ?? false);
         setAutoApproval(settings.autoApproval ?? false);
-        setGithubConnected(settings.githubConnected ?? false);
-        setBitbucketConnected(settings.bitbucketConnected ?? false);
-        setJiraConnected(settings.jiraConnected ?? false);
       } catch (error) {
         console.error("Failed to load user settings:", error);
         toast.error("Failed to load saved settings");
@@ -70,9 +69,6 @@ const Settings = () => {
         emailNotifications,
         reviewReminders,
         autoApproval,
-        githubConnected,
-        bitbucketConnected,
-        jiraConnected,
       };
 
       localStorage.setItem("user-settings", JSON.stringify(settings));
@@ -83,34 +79,54 @@ const Settings = () => {
     }
   };
 
-  const handleOAuthConnect = (provider: string) => {
-    // In real implementation, this would redirect to OAuth flow
-    toast.info(`${provider} OAuth integration coming soon!`);
+  const handleOAuthConnect = async (providerName: string) => {
+    const provider = providerName.toLowerCase() as OAuthProvider;
 
-    // For now, just toggle the connection state
-    if (provider === "GitHub") {
-      setGithubConnected(true);
-      toast.success(`Connected to ${provider}`);
-    } else if (provider === "Bitbucket") {
-      setBitbucketConnected(true);
-      toast.success(`Connected to ${provider}`);
-    } else if (provider === "Jira") {
-      setJiraConnected(true);
-      toast.success(`Connected to ${provider}`);
+    try {
+      // Show info toast about OAuth simulation
+      toast.info(`Connecting to ${providerName}...`, {
+        description: "Demo mode: Simulating OAuth flow"
+      });
+
+      // Simulate OAuth connection
+      // In production, replace with: initiateOAuth(provider, true)
+      simulateOAuthConnect(provider);
+
+      // Update connection state
+      if (provider === "github") {
+        setGithubConnected(true);
+      } else if (provider === "bitbucket") {
+        setBitbucketConnected(true);
+      } else if (provider === "jira") {
+        setJiraConnected(true);
+      }
+
+      toast.success(`Successfully connected to ${providerName}!`);
+    } catch (error) {
+      console.error(`Failed to connect to ${providerName}:`, error);
+      toast.error(`Failed to connect to ${providerName}`);
     }
   };
 
-  const handleOAuthDisconnect = (provider: string) => {
-    // In real implementation, this would revoke OAuth tokens
-    if (provider === "GitHub") {
-      setGithubConnected(false);
-      toast.success(`Disconnected from ${provider}`);
-    } else if (provider === "Bitbucket") {
-      setBitbucketConnected(false);
-      toast.success(`Disconnected from ${provider}`);
-    } else if (provider === "Jira") {
-      setJiraConnected(false);
-      toast.success(`Disconnected from ${provider}`);
+  const handleOAuthDisconnect = async (providerName: string) => {
+    const provider = providerName.toLowerCase() as OAuthProvider;
+
+    try {
+      await disconnectOAuth(provider);
+
+      // Update connection state
+      if (provider === "github") {
+        setGithubConnected(false);
+      } else if (provider === "bitbucket") {
+        setBitbucketConnected(false);
+      } else if (provider === "jira") {
+        setJiraConnected(false);
+      }
+
+      toast.success(`Disconnected from ${providerName}`);
+    } catch (error) {
+      console.error(`Failed to disconnect from ${providerName}:`, error);
+      toast.error(`Failed to disconnect from ${providerName}`);
     }
   };
 
